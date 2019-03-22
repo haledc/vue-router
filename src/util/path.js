@@ -1,6 +1,6 @@
 /* @flow */
 
-export function resolvePath (
+export function resolvePath(
   relative: string,
   base: string,
   append?: boolean
@@ -42,10 +42,12 @@ export function resolvePath (
   return stack.join('/')
 }
 
-export function parsePath (path: string): {
-  path: string;
-  query: string;
-  hash: string;
+export function parsePath(
+  path: string
+): {
+  path: string,
+  query: string,
+  hash: string
 } {
   let hash = ''
   let query = ''
@@ -69,6 +71,6 @@ export function parsePath (path: string): {
   }
 }
 
-export function cleanPath (path: string): string {
-  return path.replace(/\/\//g, '/')
+export function cleanPath(path: string): string {
+  return path.replace(/\/\//g, '/') // ! 2个 // 替换成 1 个 /
 }

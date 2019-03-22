@@ -3,14 +3,14 @@ import { extend } from '../util/misc'
 
 export default {
   name: 'RouterView',
-  functional: true,
+  functional: true, // ! 函数式组件
   props: {
     name: {
       type: String,
       default: 'default'
     }
   },
-  render (_, { props, children, parent, data }) {
+  render(_, { props, children, parent, data }) {
     // used by devtools to display a router-view badge
     data.routerView = true
 
@@ -18,7 +18,7 @@ export default {
     // so that components rendered by router-view can resolve named slots
     const h = parent.$createElement
     const name = props.name
-    const route = parent.$route
+    const route = parent.$route // ! 获取当前的路径
     const cache = parent._routerViewCache || (parent._routerViewCache = {})
 
     // determine current view depth, also check to see if the tree
@@ -48,17 +48,15 @@ export default {
       return h()
     }
 
-    const component = cache[name] = matched.components[name]
+    const component = (cache[name] = matched.components[name])
 
     // attach instance registration hook
     // this will be called in the instance's injected lifecycle hooks
+    // ! 注册路由的方法
     data.registerRouteInstance = (vm, val) => {
       // val could be undefined for unregistration
       const current = matched.instances[name]
-      if (
-        (val && current !== vm) ||
-        (!val && current === vm)
-      ) {
+      if ((val && current !== vm) || (!val && current === vm)) {
         matched.instances[name] = val
       }
     }
@@ -70,12 +68,15 @@ export default {
     }
 
     // resolve props
-    let propsToPass = data.props = resolveProps(route, matched.props && matched.props[name])
+    let propsToPass = (data.props = resolveProps(
+      route,
+      matched.props && matched.props[name]
+    ))
     if (propsToPass) {
       // clone to prevent mutation
       propsToPass = data.props = extend({}, propsToPass)
       // pass non-declared props as attrs
-      const attrs = data.attrs = data.attrs || {}
+      const attrs = (data.attrs = data.attrs || {})
       for (const key in propsToPass) {
         if (!component.props || !(key in component.props)) {
           attrs[key] = propsToPass[key]
@@ -88,7 +89,7 @@ export default {
   }
 }
 
-function resolveProps (route, config) {
+function resolveProps(route, config) {
   switch (typeof config) {
     case 'undefined':
       return
@@ -103,7 +104,7 @@ function resolveProps (route, config) {
         warn(
           false,
           `props in "${route.path}" is a ${typeof config}, ` +
-          `expecting an object, function or boolean.`
+            `expecting an object, function or boolean.`
         )
       }
   }

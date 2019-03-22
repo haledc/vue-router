@@ -7,23 +7,27 @@ import { fillParams } from './params'
 import { warn } from './warn'
 import { extend } from './misc'
 
-export function normalizeLocation (
+// ! 格式化 URL 的方法
+export function normalizeLocation(
   raw: RawLocation,
   current: ?Route,
   append: ?boolean,
   router: ?VueRouter
 ): Location {
-  let next: Location = typeof raw === 'string' ? { path: raw } : raw
+  let next: Location = typeof raw === 'string' ? { path: raw } : raw // ! 处理字符串类型
   // named target
+  // ! 已经解析过了，返回它本身
   if (next.name || next._normalized) {
     return next
   }
 
   // relative params
+  // ! 有 params 且没有 path
   if (!next.path && next.params && current) {
     next = extend({}, next)
     next._normalized = true
     const params: any = extend(extend({}, current.params), next.params)
+    // ! 有 name
     if (current.name) {
       next.name = current.name
       next.params = params
@@ -36,7 +40,8 @@ export function normalizeLocation (
     return next
   }
 
-  const parsedPath = parsePath(next.path || '')
+  // ! 一种是有 path
+  const parsedPath = parsePath(next.path || '') // ! 解析 path
   const basePath = (current && current.path) || '/'
   const path = parsedPath.path
     ? resolvePath(parsedPath.path, basePath, append || next.append)
@@ -54,7 +59,7 @@ export function normalizeLocation (
   }
 
   return {
-    _normalized: true,
+    _normalized: true, // ! 已解析标志
     path,
     query,
     hash
