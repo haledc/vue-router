@@ -40,14 +40,14 @@ export function install(Vue) {
     }
   })
 
-  // ! 定义 $router，可以在 vue 实例中访问
+  // ! 定义 $router，可以在 vue 实例中访问 (只读属性)
   Object.defineProperty(Vue.prototype, '$router', {
     get() {
       return this._routerRoot._router
     }
   })
 
-  // ! 定义 $route，可以在 vue 实例中访问
+  // ! 定义 $route，可以在 vue 实例中访问 (只读属性)
   Object.defineProperty(Vue.prototype, '$route', {
     get() {
       return this._routerRoot._route
