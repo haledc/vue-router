@@ -38,7 +38,18 @@ export function createRouteMap(
     }
   }
 
-  // ! 返回对象
+  if (process.env.NODE_ENV === 'development') {
+    // warn if routes do not include leading slashes
+    const found = pathList
+    // check for missing leading slash
+      .filter(path => path && path.charAt(0) !== '*' && path.charAt(0) !== '/')
+
+    if (found.length > 0) {
+      const pathNames = found.map(path => `- ${path}`).join('\n')
+      warn(false, `Non-nested routes must include a leading slash character. Fix the following routes: \n${pathNames}`)
+    }
+  }
+
   return {
     pathList,
     pathMap,
@@ -90,8 +101,8 @@ function addRouteRecord(
       route.props == null
         ? {}
         : route.components
-        ? route.props
-        : { default: route.props }
+          ? route.props
+          : { default: route.props }
   }
 
   // ! 如果有子路由，递归增加记录
@@ -126,11 +137,24 @@ function addRouteRecord(
     })
   }
 
-  // ! 如果路由有别名，给别名也添加到路由记录
+  if (!pathMap[record.path]) {
+    pathList.push(record.path)
+    pathMap[record.path] = record
+  }
+
   if (route.alias !== undefined) {
     const aliases = Array.isArray(route.alias) ? route.alias : [route.alias]
+    for (let i = 0; i < aliases.length; ++i) {
+      const alias = aliases[i]
+      if (process.env.NODE_ENV !== 'production' && alias === path) {
+        warn(
+          false,
+          `Found an alias with the same value as the path: "${path}". You have to remove that alias. It will be ignored in development.`
+        )
+        // skip in dev to make it work
+        continue
+      }
 
-    aliases.forEach(alias => {
       const aliasRoute = {
         path: alias,
         children: route.children
@@ -143,14 +167,7 @@ function addRouteRecord(
         parent,
         record.path || '/' // matchAs
       )
-    })
-  }
-
-  // ! 添加和更新到路径映射表；
-  // ! 如果路径映射表没有已经记录的路由的路径，添加记录 => pathMap = [{path: record}]
-  if (!pathMap[record.path]) {
-    pathList.push(record.path) // ! 添加到路径列表中
-    pathMap[record.path] = record // ! 赋值到路径映射中
+    }
   }
 
   // ! 命名路由添加和更新到记录 => nameMap = [{name: record}]
@@ -167,7 +184,7 @@ function addRouteRecord(
   }
 }
 
-function compileRouteRegex(
+function compileRouteRegex (
   path: string,
   pathToRegexpOptions: PathToRegexpOptions
 ): RouteRegExp {
@@ -185,14 +202,13 @@ function compileRouteRegex(
   return regex
 }
 
-// ! 格式化 path
-function normalizePath(
+function normalizePath (
   path: string,
   parent?: RouteRecord,
   strict?: boolean
 ): string {
-  if (!strict) path = path.replace(/\/$/, '') // ! 结尾斜线替换为空
-  if (path[0] === '/') return path // ! 以 / 开头的路径（绝对路径）， 直接返回该路径
-  if (parent == null) return path // ! 没有父的，直接返回该路径
-  return cleanPath(`${parent.path}/${path}`) // ! 拼接路径
+  if (!strict) path = path.replace(/\/$/, '')
+  if (path[0] === '/') return path
+  if (parent == null) return path
+  return cleanPath(`${parent.path}/${path}`)
 }

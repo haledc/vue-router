@@ -63,16 +63,8 @@ export function createMatcher(
         }
       }
 
-      // ! 如果有命名路由的记录，计算出路径
-      if (record) {
-        location.path = fillParams(
-          record.path,
-          location.params,
-          `named route "${name}"`
-        )
-        return _createRoute(record, location, redirectedFrom) // ! 创建路由
-      }
-      // ! 非命名路由处理
+      location.path = fillParams(record.path, location.params, `named route "${name}"`)
+      return _createRoute(record, location, redirectedFrom)
     } else if (location.path) {
       location.params = {}
 

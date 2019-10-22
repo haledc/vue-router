@@ -92,7 +92,19 @@ export default class VueRouter {
 
     this.apps.push(app) // ! 存储组件实例
 
-    // main app already initialized.
+    // set up app destroyed handler
+    // https://github.com/vuejs/vue-router/issues/2639
+    app.$once('hook:destroyed', () => {
+      // clean out app from this.apps array once destroyed
+      const index = this.apps.indexOf(app)
+      if (index > -1) this.apps.splice(index, 1)
+      // ensure we still have a main app or null if no apps
+      // we do not release the router so it can be reused
+      if (this.app === app) this.app = this.apps[0] || null
+    })
+
+    // main app previously initialized
+    // return as we don't need to set up new history listener
     if (this.app) {
       return
     }
@@ -142,12 +154,26 @@ export default class VueRouter {
     this.history.onError(errorCb)
   }
 
-  push(location: RawLocation, onComplete?: Function, onAbort?: Function) {
-    this.history.push(location, onComplete, onAbort)
+  push (location: RawLocation, onComplete?: Function, onAbort?: Function) {
+    // $flow-disable-line
+    if (!onComplete && !onAbort && typeof Promise !== 'undefined') {
+      return new Promise((resolve, reject) => {
+        this.history.push(location, resolve, reject)
+      })
+    } else {
+      this.history.push(location, onComplete, onAbort)
+    }
   }
 
-  replace(location: RawLocation, onComplete?: Function, onAbort?: Function) {
-    this.history.replace(location, onComplete, onAbort)
+  replace (location: RawLocation, onComplete?: Function, onAbort?: Function) {
+    // $flow-disable-line
+    if (!onComplete && !onAbort && typeof Promise !== 'undefined') {
+      return new Promise((resolve, reject) => {
+        this.history.replace(location, resolve, reject)
+      })
+    } else {
+      this.history.replace(location, onComplete, onAbort)
+    }
   }
 
   go(n: number) {
@@ -193,10 +219,10 @@ export default class VueRouter {
     normalizedTo: Location,
     resolved: Route
   } {
-    // ! 规划位置
+    current = current || this.history.current
     const location = normalizeLocation(
       to,
-      current || this.history.current,
+      current,
       append,
       this
     )

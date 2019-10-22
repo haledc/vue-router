@@ -30,7 +30,6 @@ export class HashHistory extends History {
       setupScroll()
     }
 
-    // ! 监听事件
     window.addEventListener(
       supportsPushState ? 'popstate' : 'hashchange',
       () => {
@@ -38,7 +37,6 @@ export class HashHistory extends History {
         if (!ensureSlash()) {
           return
         }
-        // ! 获取hash值，跳转路径
         this.transitionTo(getHash(), route => {
           if (supportsScroll) {
             handleScroll(this.router, route, current, true)
@@ -53,13 +51,11 @@ export class HashHistory extends History {
 
   push(location: RawLocation, onComplete?: Function, onAbort?: Function) {
     const { current: fromRoute } = this
-
-    // ! 切换路径
     this.transitionTo(
       location,
       route => {
-        pushHash(route.fullPath) // ! 修改路径
-        handleScroll(this.router, route, fromRoute, false) // ! 设置滚动条
+        pushHash(route.fullPath)
+        handleScroll(this.router, route, fromRoute, false)
         onComplete && onComplete(route)
       },
       onAbort
@@ -116,9 +112,28 @@ function ensureSlash(): boolean {
 export function getHash(): string {
   // We can't use window.location.hash here because it's not
   // consistent across browsers - Firefox will pre-decode it!
-  const href = window.location.href
+  let href = window.location.href
   const index = href.indexOf('#')
-  return index === -1 ? '' : decodeURI(href.slice(index + 1))
+  // empty path
+  if (index < 0) return ''
+
+  href = href.slice(index + 1)
+  // decode the hash but not the search or hash
+  // as search(query) is already decoded
+  // https://github.com/vuejs/vue-router/issues/2708
+  const searchIndex = href.indexOf('?')
+  if (searchIndex < 0) {
+    const hashIndex = href.indexOf('#')
+    if (hashIndex > -1) {
+      href = decodeURI(href.slice(0, hashIndex)) + href.slice(hashIndex)
+    } else href = decodeURI(href)
+  } else {
+    if (searchIndex > -1) {
+      href = decodeURI(href.slice(0, searchIndex)) + href.slice(searchIndex)
+    }
+  }
+
+  return href
 }
 
 function getUrl(path) {

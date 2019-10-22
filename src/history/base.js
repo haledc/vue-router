@@ -4,13 +4,14 @@ import { _Vue } from '../install'
 import type Router from '../index'
 import { inBrowser } from '../util/dom'
 import { runQueue } from '../util/async'
-import { warn, isError } from '../util/warn'
+import { warn, isError, isExtendedError } from '../util/warn'
 import { START, isSameRoute } from '../util/route'
 import {
   flatten,
   flatMapComponents,
   resolveAsyncComponents
 } from '../util/resolve-components'
+import { NavigationDuplicated } from './errors'
 
 // ! History 基类
 export class History {
@@ -62,24 +63,20 @@ export class History {
     this.errorCbs.push(errorCb)
   }
 
-  // ! 路由跳转的方法
-  transitionTo(
-    location: RawLocation, // ! 跳转的 URL
-    onComplete?: Function, // ! 跳转成功回调
-    onAbort?: Function // ! 跳转失败回调
+  transitionTo (
+    location: RawLocation,
+    onComplete?: Function,
+    onAbort?: Function
   ) {
-    const route = this.router.match(location, this.current) // ! 获取匹配的路由信息
-
-    // ! 确认路由跳转
+    const route = this.router.match(location, this.current)
     this.confirmTransition(
       route,
       () => {
-        this.updateRoute(route) // ! 更新路由信息
-        onComplete && onComplete(route) // ! 添加 hashchange 监听
-        this.ensureURL() // ! 更新 URL
+        this.updateRoute(route)
+        onComplete && onComplete(route)
+        this.ensureURL()
 
         // fire ready cbs once
-        // ! 只执行一次 ready 回调
         if (!this.ready) {
           this.ready = true
           this.readyCbs.forEach(cb => {
@@ -87,7 +84,6 @@ export class History {
           })
         }
       },
-      // ! 错误处理
       err => {
         if (onAbort) {
           onAbort(err)
@@ -113,7 +109,11 @@ export class History {
 
     // ! 中断路由跳转的方法
     const abort = err => {
-      if (isError(err)) {
+      // after merging https://github.com/vuejs/vue-router/pull/2771 we
+      // When the user navigates through history through back/forward buttons
+      // we do not want to throw the error. We only throw it if directly calling
+      // push/replace. That's why it's not included in isError
+      if (!isExtendedError(NavigationDuplicated, err) && isError(err)) {
         if (this.errorCbs.length) {
           this.errorCbs.forEach(cb => {
             cb(err)
@@ -133,10 +133,9 @@ export class History {
       route.matched.length === current.matched.length
     ) {
       this.ensureURL()
-      return abort()
+      return abort(new NavigationDuplicated(route))
     }
 
-    // ! 解析队列；通过对比路由解析出：可复用的组件，需要渲染的组件，失活的组件
     const { updated, deactivated, activated } = resolveQueue(
       this.current.matched,
       route.matched
@@ -355,7 +354,6 @@ function bindEnterGuard(
 ): NavigationGuard {
   return function routeEnterGuard(to, from, next) {
     return guard(to, from, cb => {
-      next(cb)
       if (typeof cb === 'function') {
         cbs.push(() => {
           // #750
@@ -367,6 +365,7 @@ function bindEnterGuard(
           poll(cb, match.instances, key, isValid)
         })
       }
+      next(cb)
     })
   }
 }
