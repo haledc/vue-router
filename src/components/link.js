@@ -20,7 +20,7 @@ export default {
     },
     tag: {
       type: String,
-      default: 'a'
+      default: 'a' // ! 默认 a 标签
     },
     exact: Boolean,
     append: Boolean,

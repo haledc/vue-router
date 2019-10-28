@@ -7,8 +7,9 @@ import { START } from '../util/route'
 import { setupScroll, handleScroll } from '../util/scroll'
 import { pushState, replaceState, supportsPushState } from '../util/push-state'
 
+// ! H5 History
 export class HTML5History extends History {
-  constructor (router: Router, base: ?string) {
+  constructor(router: Router, base: ?string) {
     super(router, base)
 
     const expectScroll = router.options.scrollBehavior
@@ -19,6 +20,7 @@ export class HTML5History extends History {
     }
 
     const initLocation = getLocation(this.base)
+    // ! 监听 popstate 事件
     window.addEventListener('popstate', e => {
       const current = this.current
 
@@ -37,41 +39,52 @@ export class HTML5History extends History {
     })
   }
 
-  go (n: number) {
+  go(n: number) {
     window.history.go(n)
   }
 
-  push (location: RawLocation, onComplete?: Function, onAbort?: Function) {
+  push(location: RawLocation, onComplete?: Function, onAbort?: Function) {
     const { current: fromRoute } = this
-    this.transitionTo(location, route => {
-      pushState(cleanPath(this.base + route.fullPath))
-      handleScroll(this.router, route, fromRoute, false)
-      onComplete && onComplete(route)
-    }, onAbort)
+    this.transitionTo(
+      location,
+      route => {
+        pushState(cleanPath(this.base + route.fullPath))
+        handleScroll(this.router, route, fromRoute, false)
+        onComplete && onComplete(route)
+      },
+      onAbort
+    )
   }
 
-  replace (location: RawLocation, onComplete?: Function, onAbort?: Function) {
+  replace(location: RawLocation, onComplete?: Function, onAbort?: Function) {
     const { current: fromRoute } = this
-    this.transitionTo(location, route => {
-      replaceState(cleanPath(this.base + route.fullPath))
-      handleScroll(this.router, route, fromRoute, false)
-      onComplete && onComplete(route)
-    }, onAbort)
+    this.transitionTo(
+      location,
+      route => {
+        replaceState(cleanPath(this.base + route.fullPath))
+        handleScroll(this.router, route, fromRoute, false)
+        onComplete && onComplete(route)
+      },
+      onAbort
+    )
   }
 
-  ensureURL (push?: boolean) {
+  // ! 确认 URL
+  ensureURL(push?: boolean) {
     if (getLocation(this.base) !== this.current.fullPath) {
       const current = cleanPath(this.base + this.current.fullPath)
       push ? pushState(current) : replaceState(current)
     }
   }
 
-  getCurrentLocation (): string {
+  // ! 获取当前 URL
+  getCurrentLocation(): string {
     return getLocation(this.base)
   }
 }
 
-export function getLocation (base: string): string {
+// ! 获取 URL
+export function getLocation(base: string): string {
   let path = decodeURI(window.location.pathname)
   if (base && path.indexOf(base) === 0) {
     path = path.slice(base.length)

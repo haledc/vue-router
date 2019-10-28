@@ -88,13 +88,16 @@ export function flatMapComponents(
   )
 }
 
+// ! 数组降维
 export function flatten(arr: Array<any>): Array<any> {
   return Array.prototype.concat.apply([], arr)
 }
 
+// ! 是否支持 Symbol
 const hasSymbol =
   typeof Symbol === 'function' && typeof Symbol.toStringTag === 'symbol'
 
+// ! 是不是 ES Module
 function isESModule(obj) {
   return obj.__esModule || (hasSymbol && obj[Symbol.toStringTag] === 'Module')
 }
@@ -103,6 +106,7 @@ function isESModule(obj) {
 // so the resolve/reject functions may get called an extra time
 // if the user uses an arrow function shorthand that happens to
 // return that Promise.
+// ! 生成执行一次函数
 function once(fn) {
   let called = false
   return function(...args) {

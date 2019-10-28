@@ -35,26 +35,27 @@ export default class VueRouter {
 
   constructor(options: RouterOptions = {}) {
     this.app = null // ! 根 Vue 实例
-    this.apps = [] // ! 所有子组件的 Vue 实例
-    this.options = options // ! 传入的路由配置
-    this.beforeHooks = [] // ! before 类钩子
-    this.resolveHooks = [] // ! resolve 类钩子
+    this.apps = [] // ! 存储所有子组件的 Vue 实例
+    this.options = options // ! 存储传入的路由配置
+    this.beforeHooks = [] // ! 存储 before 类钩子
+    this.resolveHooks = [] // ! 存储 resolve 类钩子
     this.afterHooks = [] // ! after 类钩子
-    this.matcher = createMatcher(options.routes || [], this) // ! 创建路由匹配对象
+    this.matcher = createMatcher(options.routes || [], this) // ! 创建路由匹配对象 matcher
 
-    let mode = options.mode || 'hash' // ! 路由模式，默认 hash
-    // ! 是否降级；判断能否使用 history 模式
+    let mode = options.mode || 'hash' // ! 路由模式，默认 hash 模式
+
+    // ! 是否降级，使用了 H5 模式且浏览器 history.pushState，并且设置了 fallback 选项为 true（默认）
     this.fallback =
       mode === 'history' && !supportsPushState && options.fallback !== false
     if (this.fallback) {
       mode = 'hash' // ! 自动降级为 hash 模式
     }
     if (!inBrowser) {
-      mode = 'abstract' // ! 非浏览器，使用抽象模式
+      mode = 'abstract' // ! 非浏览器环境（服务端渲染），使用 abstract 模式
     }
     this.mode = mode
 
-    // ! 匹配不同的模式，实例化不同的 history 对象
+    // ! 匹配不同的模式，生成不同的 History 实例对象
     switch (mode) {
       case 'history':
         this.history = new HTML5History(this, options.base)
@@ -77,11 +78,12 @@ export default class VueRouter {
     return this.matcher.match(raw, current, redirectedFrom)
   }
 
+  // ! 获取当前的路由
   get currentRoute(): ?Route {
     return this.history && this.history.current
   }
 
-  // ! 路由的初始化；传入组件为参数
+  // ! 路由的初始化，传入组件实例为参数
   init(app: any /* Vue component instance */) {
     process.env.NODE_ENV !== 'production' &&
       assert(
@@ -111,9 +113,9 @@ export default class VueRouter {
 
     this.app = app
 
-    const history = this.history // ! 获取 history
+    const history = this.history // ! 获取 History 实例
 
-    // ! 判断 history 的类型，使用不同的方法切换路径（路由跳转）
+    // ! 判断 History 实例的类型，使用不同的方法切换路径（路由跳转）
     if (history instanceof HTML5History) {
       history.transitionTo(history.getCurrentLocation())
     } else if (history instanceof HashHistory) {
@@ -134,27 +136,34 @@ export default class VueRouter {
     })
   }
 
+  // ! 全局路由 beforeEach 钩子 @API
   beforeEach(fn: Function): Function {
     return registerHook(this.beforeHooks, fn)
   }
 
+  // ! 全局路由 beforeResolve 钩子 @API
   beforeResolve(fn: Function): Function {
     return registerHook(this.resolveHooks, fn)
   }
 
+  // ! 全局路由 afterEach 钩子 @API
   afterEach(fn: Function): Function {
     return registerHook(this.afterHooks, fn)
   }
 
+  // ! 监听 Ready @API
   onReady(cb: Function, errorCb?: Function) {
     this.history.onReady(cb, errorCb)
   }
 
+  // ! 监听错误 @API
   onError(errorCb: Function) {
     this.history.onError(errorCb)
   }
 
-  push (location: RawLocation, onComplete?: Function, onAbort?: Function) {
+  // ! push，可以返回原页面。使用 history 的 push 方法 @API
+  // ! 没有设置第二和第三个参数和宿主环境支持 Promise 时，返回一个 Promise 对象
+  push(location: RawLocation, onComplete?: Function, onAbort?: Function) {
     // $flow-disable-line
     if (!onComplete && !onAbort && typeof Promise !== 'undefined') {
       return new Promise((resolve, reject) => {
@@ -165,7 +174,9 @@ export default class VueRouter {
     }
   }
 
-  replace (location: RawLocation, onComplete?: Function, onAbort?: Function) {
+  // ! 替换，无法返回原页面。使用 history 的 replace 方法  @API
+  // ! 没有设置第二和第三个参数和宿主环境支持 Promise 时，返回一个 Promise 对象
+  replace(location: RawLocation, onComplete?: Function, onAbort?: Function) {
     // $flow-disable-line
     if (!onComplete && !onAbort && typeof Promise !== 'undefined') {
       return new Promise((resolve, reject) => {
@@ -176,18 +187,22 @@ export default class VueRouter {
     }
   }
 
+  // ! Go @API
   go(n: number) {
     this.history.go(n)
   }
 
+  // ! 后退 @API
   back() {
     this.go(-1)
   }
 
+  // ! 前进 @API
   forward() {
     this.go(1)
   }
 
+  // ! 获取目标路由或者当前路由匹配的组件数组 @API
   getMatchedComponents(to?: RawLocation | Route): Array<any> {
     const route: any = to
       ? to.matched
@@ -207,6 +222,7 @@ export default class VueRouter {
     )
   }
 
+  // ! 解析目标位置 @API
   resolve(
     to: RawLocation,
     current?: Route,
@@ -220,12 +236,7 @@ export default class VueRouter {
     resolved: Route
   } {
     current = current || this.history.current
-    const location = normalizeLocation(
-      to,
-      current,
-      append,
-      this
-    )
+    const location = normalizeLocation(to, current, append, this)
     const route = this.match(location, current) // ! 生成路径
     const fullPath = route.redirectedFrom || route.fullPath
     const base = this.history.base
@@ -240,7 +251,7 @@ export default class VueRouter {
     }
   }
 
-  // ! 动态添加路由
+  // ! 动态添加路由 @API
   addRoutes(routes: Array<RouteConfig>) {
     this.matcher.addRoutes(routes)
     if (this.history.current !== START) {

@@ -26,6 +26,7 @@ export class History {
   errorCbs: Array<Function>
 
   // implemented by sub-classes
+  // ! 子类实现的方法
   +go: (n: number) => void
   +push: (loc: RawLocation) => void
   +replace: (loc: RawLocation) => void
@@ -34,9 +35,9 @@ export class History {
 
   constructor(router: Router, base: ?string) {
     this.router = router
-    this.base = normalizeBase(base)
+    this.base = normalizeBase(base) // ! 基础路径
     // start with a route object that stands for "nowhere"
-    this.current = START // ! 赋值初始路径
+    this.current = START // ! 赋值初始 route
     this.pending = null
     this.ready = false
     this.readyCbs = []
@@ -63,18 +64,19 @@ export class History {
     this.errorCbs.push(errorCb)
   }
 
-  transitionTo (
+  // ! 路由跳转
+  transitionTo(
     location: RawLocation,
     onComplete?: Function,
     onAbort?: Function
   ) {
-    const route = this.router.match(location, this.current)
+    const route = this.router.match(location, this.current) // ! 获取匹配路由
     this.confirmTransition(
       route,
       () => {
-        this.updateRoute(route)
-        onComplete && onComplete(route)
-        this.ensureURL()
+        this.updateRoute(route) // ! 跳转成功更新当前路由值
+        onComplete && onComplete(route) // ! 执行跳转成功函数
+        this.ensureURL() // ! 确认 URL，跳转路由
 
         // fire ready cbs once
         if (!this.ready) {
@@ -98,12 +100,7 @@ export class History {
     )
   }
 
-  /**
-   * ! 确认路由跳转的方法
-   * @param {Route} route 匹配的路由
-   * @param {Function} onComplete 跳转成功回调
-   * @param {Function} onAbort 跳转失败回调
-   */
+  // ! 确认跳转 -> 相当于扩展 transitionTo
   confirmTransition(route: Route, onComplete: Function, onAbort?: Function) {
     const current = this.current // ! 当前路径
 
@@ -113,6 +110,7 @@ export class History {
       // When the user navigates through history through back/forward buttons
       // we do not want to throw the error. We only throw it if directly calling
       // push/replace. That's why it's not included in isError
+      // ! 非导航重复的报错时
       if (!isExtendedError(NavigationDuplicated, err) && isError(err)) {
         if (this.errorCbs.length) {
           this.errorCbs.forEach(cb => {
@@ -133,7 +131,7 @@ export class History {
       route.matched.length === current.matched.length
     ) {
       this.ensureURL()
-      return abort(new NavigationDuplicated(route))
+      return abort(new NavigationDuplicated(route)) // ! 中止并传入导航重复错误
     }
 
     const { updated, deactivated, activated } = resolveQueue(
@@ -141,7 +139,7 @@ export class History {
       route.matched
     )
 
-    // ! 构造守卫队列；按顺序执行，先进先出
+    // ! 构造守卫钩子队列 -> 先进先出
     const queue: Array<?NavigationGuard> = [].concat(
       // in-component leave guards
       extractLeaveGuards(deactivated), // ! ① 在失活的组件里调用离开守卫
@@ -158,17 +156,17 @@ export class History {
     // ! 存储路由
     this.pending = route
 
-    // ! 定义迭代器；用于执行 queue 中的守卫钩子
+    // ! 迭代器方法 -> 执行 queue 中的守卫钩子
     const iterator = (hook: NavigationGuard, next) => {
       if (this.pending !== route) {
         return abort()
       }
       try {
-        // ! 执行钩子函数（守卫）并传入参数 (to from next)
+        // ! 执行钩子函数（守卫）并传入参数 (route -> to current -> from next -> fn)
         hook(route, current, (to: any) => {
           if (to === false || isError(to)) {
             // next(false) -> abort navigation, ensure current URL
-            // ! next函数存入 false 时， 中断跳转
+            // ! next(false) -> 中断跳转
             this.ensureURL(true)
             abort(to)
           } else if (
@@ -177,7 +175,6 @@ export class History {
               (typeof to.path === 'string' || typeof to.name === 'string'))
           ) {
             // next('/') or next({ path: '/' }) -> redirect
-            // ! next('/') 或者 next({ path: '/' }) -> 重定向
             abort()
             if (typeof to === 'object' && to.replace) {
               this.replace(to)
@@ -222,17 +219,19 @@ export class History {
     })
   }
 
-  // ! 更新路由的方法
+  // ! 更新当前路由 this.current 的方法
   updateRoute(route: Route) {
     const prev = this.current
     this.current = route
     this.cb && this.cb(route)
+    // ! 执行 afterHooks 钩子
     this.router.afterHooks.forEach(hook => {
       hook && hook(route, prev)
     })
   }
 }
 
+// ! 规范化基础路径
 function normalizeBase(base: ?string): string {
   if (!base) {
     if (inBrowser) {
@@ -253,7 +252,7 @@ function normalizeBase(base: ?string): string {
   return base.replace(/\/$/, '')
 }
 
-// ! 解析队列的方法
+// ! 解析队列
 function resolveQueue(
   current: Array<RouteRecord>,
   next: Array<RouteRecord>
@@ -271,30 +270,29 @@ function resolveQueue(
     }
   }
   return {
-    updated: next.slice(0, i), // ! 可复用的组件对应路由
+    updated: next.slice(0, i), // ! 可复用的组件对应路由 -> 相同部分 record
     activated: next.slice(i), // ! 需要渲染的组件对应路由
     deactivated: current.slice(i) // ! 失活的组件对应路由
   }
 }
 
-// ! 提取所有守卫钩子的方法
+// ! 提取所有守卫钩子
 function extractGuards(
   records: Array<RouteRecord>,
   name: string,
   bind: Function,
-  reverse?: boolean
+  reverse?: boolean // ! 是否反转数组
 ): Array<?Function> {
   // ! 获取所有的守卫钩子
   const guards = flatMapComponents(records, (def, instance, match, key) => {
     const guard = extractGuard(def, name) // ! 获取对应的守卫钩子
     if (guard) {
       return Array.isArray(guard)
-        ? guard.map(guard => bind(guard, instance, match, key)) // ! 执行数组的守卫钩子
+        ? guard.map(guard => bind(guard, instance, match, key)) // ! 遍历执行数组的守卫钩子
         : bind(guard, instance, match, key)
     }
   })
-  // ! 数组降维
-  // ! 先判断是否需要翻转
+  // ! 数组降维，先判断是否需要反转
   return flatten(reverse ? guards.reverse() : guards)
 }
 
@@ -312,7 +310,7 @@ function extractGuard(
 
 // ! 提取离开的守卫的方法
 function extractLeaveGuards(deactivated: Array<RouteRecord>): Array<?Function> {
-  return extractGuards(deactivated, 'beforeRouteLeave', bindGuard, true) // ! 需要翻转数组；先子后父
+  return extractGuards(deactivated, 'beforeRouteLeave', bindGuard, true) // ! 需要反转数组；先子后父
 }
 
 // ! 提取更新的守卫的方法

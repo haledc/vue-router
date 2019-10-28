@@ -5,7 +5,7 @@ import { stringifyQuery } from './query'
 
 const trailingSlashRE = /\/?$/
 
-// ! 创建路由的具体方法
+// ! 创建当前路由对象 route
 export function createRoute(
   record: ?RouteRecord,
   location: Location,
@@ -19,7 +19,7 @@ export function createRoute(
     query = clone(query)
   } catch (e) {}
 
-  // ! 创建路由对象
+  // ! 创建 route 对象
   const route: Route = {
     name: location.name || (record && record.name),
     meta: (record && record.meta) || {},
@@ -27,13 +27,15 @@ export function createRoute(
     hash: location.hash || '',
     query,
     params: location.params || {},
-    fullPath: getFullPath(location, stringifyQuery),
-    matched: record ? formatMatch(record) : [] // ! 匹配到的所有路径
+    fullPath: getFullPath(location, stringifyQuery), // ! 获取完整路径
+    matched: record ? formatMatch(record) : [] // ! 获取所有的匹配 record
   }
+
+  // ! 设置重定向路径
   if (redirectedFrom) {
     route.redirectedFrom = getFullPath(redirectedFrom, stringifyQuery)
   }
-  return Object.freeze(route) // ! 使路由对象不可修改
+  return Object.freeze(route) // ! 冻结路由对象，使它不可修改
 }
 
 // ! 路由深拷贝的方法
@@ -52,17 +54,14 @@ function clone(value) {
 }
 
 // the starting route that represents the initial state
-// ! 初始路径
+// ! 初始的 route
 export const START = createRoute(null, {
   path: '/'
 })
 
-// ! 格式化匹配的路由的方法
+// ! 获取所有的匹配 record
 function formatMatch(record: ?RouteRecord): Array<RouteRecord> {
   const res = []
-  // ! 通过记录循环向上找父的记录，直到找到最外层，
-  // ! 并把所有的记录都存储到一个数组中，返回的就是记录的数组
-  // ! 它记录了一条线路上的所有记录，从上到下
   while (record) {
     res.unshift(record)
     record = record.parent
@@ -70,12 +69,13 @@ function formatMatch(record: ?RouteRecord): Array<RouteRecord> {
   return res
 }
 
+// ! 获取完整路径（拼接 path + query + hash）
 function getFullPath({ path, query = {}, hash = '' }, _stringifyQuery): string {
   const stringify = _stringifyQuery || stringifyQuery
   return (path || '/') + stringify(query) + hash
 }
 
-// ! 判断是否时相同路由的方法
+// ! 是否是相同 route
 export function isSameRoute(a: Route, b: ?Route): boolean {
   if (b === START) {
     return a === b
@@ -83,7 +83,7 @@ export function isSameRoute(a: Route, b: ?Route): boolean {
     return false
   } else if (a.path && b.path) {
     return (
-      a.path.replace(trailingSlashRE, '') ===
+      a.path.replace(trailingSlashRE, '') === // ! 去斜杠 / 后再比较
         b.path.replace(trailingSlashRE, '') &&
       a.hash === b.hash &&
       isObjectEqual(a.query, b.query)
@@ -100,6 +100,7 @@ export function isSameRoute(a: Route, b: ?Route): boolean {
   }
 }
 
+// ! 是否是相同的对象（比较对象的值）
 function isObjectEqual(a = {}, b = {}): boolean {
   // handle null value #1566
   if (!a || !b) return a === b
@@ -113,22 +114,24 @@ function isObjectEqual(a = {}, b = {}): boolean {
     const bVal = b[key]
     // check nested equality
     if (typeof aVal === 'object' && typeof bVal === 'object') {
-      return isObjectEqual(aVal, bVal)
+      return isObjectEqual(aVal, bVal) // ! 对象类型递归比较
     }
-    return String(aVal) === String(bVal)
+    return String(aVal) === String(bVal) // ! 原始类型转换成字符串后再比较
   })
 }
 
+// ! 是否包含 route -> current 是否包含 target
 export function isIncludedRoute(current: Route, target: Route): boolean {
   return (
     current.path
-      .replace(trailingSlashRE, '/')
+      .replace(trailingSlashRE, '/') // ! 添加斜杠 /
       .indexOf(target.path.replace(trailingSlashRE, '/')) === 0 &&
     (!target.hash || current.hash === target.hash) &&
     queryIncludes(current.query, target.query)
   )
 }
 
+// ! 是否包含 query
 function queryIncludes(
   current: Dictionary<string>,
   target: Dictionary<string>

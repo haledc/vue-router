@@ -4,11 +4,13 @@ import { inBrowser } from './dom'
 import { saveScrollPosition } from './scroll'
 import { genStateKey, setStateKey, getStateKey } from './state-key'
 
+// ! 是否支持 pushState -> IE10 以上支持
 export const supportsPushState =
   inBrowser &&
-  (function () {
+  (function() {
     const ua = window.navigator.userAgent
 
+    // ! 安卓 2 或者安卓 4 手机不是 safari、chrome浏览器和没有 Windows Phone 时，返回 false
     if (
       (ua.indexOf('Android 2.') !== -1 || ua.indexOf('Android 4.0') !== -1) &&
       ua.indexOf('Mobile Safari') !== -1 &&
@@ -25,7 +27,7 @@ export function pushState(url?: string, replace?: boolean) {
   saveScrollPosition()
   // try...catch the pushState call to get around Safari
   // DOM Exception 18 where it limits to 100 pushState calls
-  const history = window.history // ! 浏览器原生 history
+  const history = window.history // ! 引用浏览器原生 history，使用原生方法跳转
   try {
     if (replace) {
       history.replaceState({ key: getStateKey() }, '', url)
@@ -33,7 +35,7 @@ export function pushState(url?: string, replace?: boolean) {
       history.pushState({ key: setStateKey(genStateKey()) }, '', url)
     }
   } catch (e) {
-    window.location[replace ? 'replace' : 'assign'](url)
+    window.location[replace ? 'replace' : 'assign'](url) // ! 使用 location 的方法跳转
   }
 }
 

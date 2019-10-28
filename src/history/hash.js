@@ -7,7 +7,7 @@ import { getLocation } from './html5'
 import { setupScroll, handleScroll } from '../util/scroll'
 import { pushState, replaceState, supportsPushState } from '../util/push-state'
 
-// ! 哈希 history
+// ! 哈希 History
 export class HashHistory extends History {
   constructor(router: Router, base: ?string, fallback: boolean) {
     super(router, base)
@@ -15,12 +15,12 @@ export class HashHistory extends History {
     if (fallback && checkFallback(this.base)) {
       return
     }
-    ensureSlash() // ! 确保斜线；/ or 空路径 => /#/
+    ensureSlash() // ! 确保斜线；/ or 空路径 -> /#/
   }
 
   // this is delayed until the app mounts
   // to avoid the hashchange listener being fired too early
-  // ! 设置监听器的方法
+  // ! 设置监听器
   setupListeners() {
     const router = this.router
     const expectScroll = router.options.scrollBehavior
@@ -30,6 +30,7 @@ export class HashHistory extends History {
       setupScroll()
     }
 
+    // ! 监听 popstate 或者 hashchange 事件
     window.addEventListener(
       supportsPushState ? 'popstate' : 'hashchange',
       () => {
@@ -79,6 +80,7 @@ export class HashHistory extends History {
     window.history.go(n)
   }
 
+  // ! 确认 URL
   ensureURL(push?: boolean) {
     const current = this.current.fullPath
     if (getHash() !== current) {
@@ -99,12 +101,13 @@ function checkFallback(base) {
   }
 }
 
+// ! 确认斜杠的方法 -> 确保 /#/xxx 存在
 function ensureSlash(): boolean {
   const path = getHash()
   if (path.charAt(0) === '/') {
     return true
   }
-  replaceHash('/' + path) // ! 如果 path 为空，则为 /#/
+  replaceHash('/' + path) // ! 在前面添加 /
   return false
 }
 
@@ -117,17 +120,19 @@ export function getHash(): string {
   // empty path
   if (index < 0) return ''
 
-  href = href.slice(index + 1)
+  href = href.slice(index + 1) // ! 去掉前面的 # -> 相当于获取到了 path
   // decode the hash but not the search or hash
   // as search(query) is already decoded
   // https://github.com/vuejs/vue-router/issues/2708
-  const searchIndex = href.indexOf('?')
+  const searchIndex = href.indexOf('?') // ! 哈希值里面是否有 ？
   if (searchIndex < 0) {
-    const hashIndex = href.indexOf('#')
+    const hashIndex = href.indexOf('#') // ! 哈希值里面是否有 #
+    // ! 有 # 没 ?，hashIndex 前 URI 解码
     if (hashIndex > -1) {
       href = decodeURI(href.slice(0, hashIndex)) + href.slice(hashIndex)
     } else href = decodeURI(href)
   } else {
+    // ! 有 ? 没 #，searchIndex 前 URI 解码
     if (searchIndex > -1) {
       href = decodeURI(href.slice(0, searchIndex)) + href.slice(searchIndex)
     }
@@ -136,11 +141,12 @@ export function getHash(): string {
   return href
 }
 
+// ! 获取 URL -> 拼接 URL
 function getUrl(path) {
-  const href = window.location.href
+  const href = window.location.href // ! 获取完整 URL
   const i = href.indexOf('#')
-  const base = i >= 0 ? href.slice(0, i) : href
-  return `${base}#${path}`
+  const base = i >= 0 ? href.slice(0, i) : href // ! 去除 hash
+  return `${base}#${path}` // ! 拼接 URL
 }
 
 function pushHash(path) {

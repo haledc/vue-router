@@ -1,3 +1,4 @@
+// ! 导航重复错误 -> 跳转到当前位置时
 export class NavigationDuplicated extends Error {
   constructor (normalizedLocation) {
     super()

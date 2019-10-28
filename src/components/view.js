@@ -82,6 +82,7 @@ export default {
     }
 
     // resolve props
+    // ! 解析路由的 props 设置
     let propsToPass = (data.props = resolveProps(
       route,
       matched.props && matched.props[name]

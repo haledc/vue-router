@@ -8,7 +8,8 @@ const regexpCompileCache: {
   [key: string]: Function
 } = Object.create(null)
 
-export function fillParams (
+// ! 填充动态 params -> /:lang/:id + { lang: 'en', id: 'foo' } -> /en/foo
+export function fillParams(
   path: string,
   params: ?Object,
   routeMsg: string

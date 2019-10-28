@@ -4,13 +4,14 @@ import Link from './components/link'
 export let _Vue
 
 export function install(Vue) {
-  if (install.installed && _Vue === Vue) return // !确保 install 只安装一次
-  install.installed = true // ! 已安装标志
+  if (install.installed && _Vue === Vue) return // !确保只安装一次
+  install.installed = true // ! 已安装标识
 
-  _Vue = Vue // ! 赋值给全局遍历，共享 Vue
+  _Vue = Vue // ! 赋值给全局变量，共享 Vue
 
   const isDef = v => v !== undefined
 
+  // ! 路由实例注册方法
   const registerInstance = (vm, callVal) => {
     let i = vm.$options._parentVnode
     if (
@@ -40,14 +41,14 @@ export function install(Vue) {
     }
   })
 
-  // ! 定义 $router，可以在 vue 实例中访问 (只读属性)
+  // ! 定义 Vue 原型的 $router 属性（只读属性），使得可以在 Vue 实例中访问 router
   Object.defineProperty(Vue.prototype, '$router', {
     get() {
       return this._routerRoot._router
     }
   })
 
-  // ! 定义 $route，可以在 vue 实例中访问 (只读属性)
+  // ! 定义 Vue 原型的 $route 属性（只读属性)，使得可以在 Vue 实例中访问 route
   Object.defineProperty(Vue.prototype, '$route', {
     get() {
       return this._routerRoot._route
@@ -57,7 +58,7 @@ export function install(Vue) {
   Vue.component('RouterView', View) // ! 全局注册 <router-view> 组件
   Vue.component('RouterLink', Link) // ! 全局注册 <router-link> 组件
 
-  // ! 定义路由钩子合并策略
+  // ! 定义路由钩子合并策略，使用和 created 选项相同的策略
   const strats = Vue.config.optionMergeStrategies
   // use the same hook merging strategy for route hooks
   strats.beforeRouteEnter = strats.beforeRouteLeave = strats.beforeRouteUpdate =

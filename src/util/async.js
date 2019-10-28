@@ -14,10 +14,10 @@ export function runQueue(
       // ! 通过 index，判断队列是否存在钩子函数
       if (queue[index]) {
         fn(queue[index], () => {
-          step(index + 1) // ! 取出对应的钩子函数执行，再执行 next，执行下一个钩子函数
+          step(index + 1) // ! 取出对应的钩子函数执行，再执行下一个钩子函数
         })
       } else {
-        step(index + 1) // ! 直接执行 next
+        step(index + 1) // ! 直接执行下一个钩子
       }
     }
   }
