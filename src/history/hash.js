@@ -132,10 +132,7 @@ export function getHash(): string {
       href = decodeURI(href.slice(0, hashIndex)) + href.slice(hashIndex)
     } else href = decodeURI(href)
   } else {
-    // ! 有 ? 没 #，searchIndex 前 URI 解码
-    if (searchIndex > -1) {
-      href = decodeURI(href.slice(0, searchIndex)) + href.slice(searchIndex)
-    }
+    href = decodeURI(href.slice(0, searchIndex)) + href.slice(searchIndex)
   }
 
   return href
