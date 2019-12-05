@@ -44,7 +44,7 @@ export default class VueRouter {
 
     let mode = options.mode || 'hash' // ! 路由模式，默认 hash 模式
 
-    // ! 是否降级，使用了 H5 模式且浏览器 history.pushState，并且设置了 fallback 选项为 true（默认）
+    // ! 是否降级，使用了 H5 模式且浏览器不支持 pushState，并且设置了 fallback 选项为 true（默认）
     this.fallback =
       mode === 'history' && !supportsPushState && options.fallback !== false
     if (this.fallback) {
@@ -73,7 +73,7 @@ export default class VueRouter {
     }
   }
 
-  // ! 匹配路由
+  // ! 匹配路由 -> 调用 matcher 对象的 match 方法 -> 生成匹配的路由
   match(raw: RawLocation, current?: Route, redirectedFrom?: Location): Route {
     return this.matcher.match(raw, current, redirectedFrom)
   }
@@ -129,6 +129,7 @@ export default class VueRouter {
       )
     }
 
+    // ! 监听并更新 route
     history.listen(route => {
       this.apps.forEach(app => {
         app._route = route
@@ -187,7 +188,7 @@ export default class VueRouter {
     }
   }
 
-  // ! Go @API
+  // ! 前进或者后退 @API
   go(n: number) {
     this.history.go(n)
   }
@@ -222,7 +223,7 @@ export default class VueRouter {
     )
   }
 
-  // ! 解析目标位置 @API
+  // ! 解析路由信息 @API
   resolve(
     to: RawLocation,
     current?: Route,
@@ -237,10 +238,10 @@ export default class VueRouter {
   } {
     current = current || this.history.current
     const location = normalizeLocation(to, current, append, this)
-    const route = this.match(location, current) // ! 生成路径
+    const route = this.match(location, current) // ! 当前路由
     const fullPath = route.redirectedFrom || route.fullPath
     const base = this.history.base
-    const href = createHref(base, fullPath, this.mode) // ! 最终跳转
+    const href = createHref(base, fullPath, this.mode) // ! 最终跳转地址
     return {
       location,
       route,
@@ -251,7 +252,7 @@ export default class VueRouter {
     }
   }
 
-  // ! 动态添加路由 @API
+  // ! 动态添加路由 @API -> 添加到匹配对象中
   addRoutes(routes: Array<RouteConfig>) {
     this.matcher.addRoutes(routes)
     if (this.history.current !== START) {
@@ -262,13 +263,14 @@ export default class VueRouter {
 
 // ! 注册钩子的方法
 function registerHook(list: Array<any>, fn: Function): Function {
-  list.push(fn) // ! 加入列表
+  list.push(fn) // ! 加入到对应的钩子列表中
   return () => {
     const i = list.indexOf(fn)
     if (i > -1) list.splice(i, 1)
   }
 }
 
+// ! 生成 href 的方法
 function createHref(base: string, fullPath: string, mode) {
   var path = mode === 'hash' ? '#' + fullPath : fullPath
   return base ? cleanPath(base + '/' + path) : path
@@ -277,6 +279,7 @@ function createHref(base: string, fullPath: string, mode) {
 VueRouter.install = install
 VueRouter.version = '__VERSION__'
 
+// ! 使用 CDN 引入时自动调用 use 安装，不用手动安装
 if (inBrowser && window.Vue) {
   window.Vue.use(VueRouter)
 }

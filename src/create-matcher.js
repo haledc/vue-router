@@ -25,12 +25,12 @@ export function createMatcher(
 ): Matcher {
   const { pathList, pathMap, nameMap } = createRouteMap(routes) // ! 生成路由映射
 
-  // ! 动态添加路由的方法
+  // ! 动态添加路由的方法 -> 再次创建路由映射，扩展已有的映射
   function addRoutes(routes) {
-    createRouteMap(routes, pathList, pathMap, nameMap) // ! 再次创建路由映射，扩展已有的映射
+    createRouteMap(routes, pathList, pathMap, nameMap)
   }
 
-  // ! 匹配路由的方法 -> 创建匹配的路由
+  // ! 匹配路由的方法 -> 生成匹配的路由
   function match(
     raw: RawLocation, // ! location
     currentRoute?: Route, // ! 当前路径
@@ -39,7 +39,7 @@ export function createMatcher(
     const location = normalizeLocation(raw, currentRoute, false, router) // ! 规范化 location
     const { name } = location
 
-    // ! 如果是命名路由，通过名称创建路由
+    // ! 如果是命名路由，通过名称生成路由
     if (name) {
       const record = nameMap[name] // ! 在命名映射表中获取 record
       if (process.env.NODE_ENV !== 'production') {
@@ -73,7 +73,7 @@ export function createMatcher(
         `named route "${name}"`
       )
       return _createRoute(record, location, redirectedFrom)
-      // ! 不是命名路由 -> 通过 path 创建路由
+      // ! 不是命名路由 -> 通过 path 生成路由
     } else if (location.path) {
       location.params = {}
 

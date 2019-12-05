@@ -17,17 +17,18 @@ export default {
     // directly use parent context's createElement() function
     // so that components rendered by router-view can resolve named slots
     const h = parent.$createElement
-    const name = props.name
-    const route = parent.$route // ! 获取当前的路径
+    const name = props.name // ! 当前组件的名称
+    const route = parent.$route // ! 当前组件的路由
     const cache = parent._routerViewCache || (parent._routerViewCache = {})
 
     // determine current view depth, also check to see if the tree
     // has been toggled inactive but kept-alive.
-    let depth = 0
+    let depth = 0 // ! 嵌套深度
     let inactive = false
     while (parent && parent._routerRoot !== parent) {
       const vnodeData = parent.$vnode && parent.$vnode.data
       if (vnodeData) {
+        // ! 嵌套 router-view
         if (vnodeData.routerView) {
           depth++
         }
@@ -51,11 +52,11 @@ export default {
       return h()
     }
 
-    const component = (cache[name] = matched.components[name])
+    const component = (cache[name] = matched.components[name]) // ! 获取路由映射的组件
 
     // attach instance registration hook
     // this will be called in the instance's injected lifecycle hooks
-    // ! 注册路由的方法
+    // ! 注册路由实例的方法
     data.registerRouteInstance = (vm, val) => {
       // val could be undefined for unregistration
       const current = matched.instances[name]
@@ -72,8 +73,9 @@ export default {
 
     // register instance in init hook
     // in case kept-alive component be actived when routes changed
-    data.hook.init = (vnode) => {
-      if (vnode.data.keepAlive &&
+    data.hook.init = vnode => {
+      if (
+        vnode.data.keepAlive &&
         vnode.componentInstance &&
         vnode.componentInstance !== matched.instances[name]
       ) {
@@ -89,10 +91,11 @@ export default {
     ))
     if (propsToPass) {
       // clone to prevent mutation
-      propsToPass = data.props = extend({}, propsToPass)
+      propsToPass = data.props = extend({}, propsToPass) // ! 扩展到组件的 props 中
       // pass non-declared props as attrs
       const attrs = (data.attrs = data.attrs || {})
       for (const key in propsToPass) {
+        // ! 组件没有 props 或者 key 不是组件的 props 的属性时，移动到 attrs 属性中
         if (!component.props || !(key in component.props)) {
           attrs[key] = propsToPass[key]
           delete propsToPass[key]
@@ -100,10 +103,11 @@ export default {
       }
     }
 
-    return h(component, data, children)
+    return h(component, data, children) // ! 渲染组件
   }
 }
 
+// ! 解析路由 props 的方法
 function resolveProps(route, config) {
   switch (typeof config) {
     case 'undefined':
@@ -113,7 +117,7 @@ function resolveProps(route, config) {
     case 'function':
       return config(route)
     case 'boolean':
-      return config ? route.params : undefined
+      return config ? route.params : undefined // ! 设置为 true 时，把动态参数转换成 props 属性
     default:
       if (process.env.NODE_ENV !== 'production') {
         warn(

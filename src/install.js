@@ -29,7 +29,7 @@ export function install(Vue) {
       if (isDef(this.$options.router)) {
         this._routerRoot = this
         this._router = this.$options.router
-        this._router.init(this) // ! 初始化路由
+        this._router.init(this) // ! 执行路由实例的 init 方法初始化路由
         Vue.util.defineReactive(this, '_route', this._router.history.current) // ! 变成响应式
       } else {
         this._routerRoot = (this.$parent && this.$parent._routerRoot) || this // ! 始终指向 Vue
@@ -58,7 +58,7 @@ export function install(Vue) {
   Vue.component('RouterView', View) // ! 全局注册 <router-view> 组件
   Vue.component('RouterLink', Link) // ! 全局注册 <router-link> 组件
 
-  // ! 定义路由钩子合并策略，使用和 created 选项相同的策略
+  // ! 定义路由钩子合并策略，使用和生命周期函数钩子 created 相同的策略
   const strats = Vue.config.optionMergeStrategies
   // use the same hook merging strategy for route hooks
   strats.beforeRouteEnter = strats.beforeRouteLeave = strats.beforeRouteUpdate =

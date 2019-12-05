@@ -88,6 +88,7 @@ export default {
 
     const data: any = { class: classes }
 
+    // ! 作用域插值（新增）
     const scopedSlot =
       !this.$scopedSlots.$hasNormal &&
       this.$scopedSlots.default &&
@@ -106,9 +107,7 @@ export default {
         if (process.env.NODE_ENV !== 'production') {
           warn(
             false,
-            `RouterLink with to="${
-              this.props.to
-            }" is trying to use a scoped slot but it didn't provide exactly one child.`
+            `RouterLink with to="${this.props.to}" is trying to use a scoped slot but it didn't provide exactly one child.`
           )
         }
         return scopedSlot.length === 0 ? h() : h('span', {}, scopedSlot)

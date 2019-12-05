@@ -45,7 +45,7 @@ export function createRouteMap(
     const found = pathList
       // check for missing leading slash
       .filter(path => path && path.charAt(0) !== '*' && path.charAt(0) !== '/')
-    // ! 获取不以 / 开头，而不是 * 的路由路径（无效路径）
+    // ! 获取不以 / 开头，也不是 * 的路由路径 -> 无效路径
 
     if (found.length > 0) {
       const pathNames = found.map(path => `- ${path}`).join('\n')
@@ -74,6 +74,7 @@ function addRouteRecord(
 ) {
   const { path, name } = route // ! 获取路由的路径和名称
   if (process.env.NODE_ENV !== 'production') {
+    // ! 路径必须填写，否则报错
     assert(path != null, `"path" is required in a route configuration.`)
     assert(
       typeof route.component !== 'string', // ! 组件不能是字符串类型，否则报错
@@ -194,7 +195,7 @@ function addRouteRecord(
   }
 }
 
-// ! 生成路由正则 -> 根据路径和选项
+// ! 生成路由匹配正则 -> 根据路径和选项生成
 function compileRouteRegex(
   path: string,
   pathToRegexpOptions: PathToRegexpOptions
@@ -213,14 +214,14 @@ function compileRouteRegex(
   return regex
 }
 
-// ! 规范化路径的方法
+// ! 规范化路径的方法 -> 拼接路径，去多余的 /
 function normalizePath(
   path: string,
   parent?: RouteRecord,
   strict?: boolean
 ): string {
-  if (!strict) path = path.replace(/\/$/, '') // ! 没设置 strict, 去掉路径尾巴的 /
+  if (!strict) path = path.replace(/\/$/, '') // ! 没设置 strict, 去掉路径末尾的 /
   if (path[0] === '/') return path // ! 绝对路径直接返回它
   if (parent == null) return path // ! 没有父级记录直接返回它
-  return cleanPath(`${parent.path}/${path}`) // ! 2个 // 替换为 1 个 /
+  return cleanPath(`${parent.path}/${path}`) // ! 拼接父级路径，并使两个 // 替换为一个 /
 }

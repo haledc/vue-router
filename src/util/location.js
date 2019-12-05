@@ -7,7 +7,7 @@ import { fillParams } from './params'
 import { warn } from './warn'
 import { extend } from './misc'
 
-// ! 规范化 location 的方法
+// ! 规范化 location 的方法 -> 合并配置
 export function normalizeLocation(
   raw: RawLocation,
   current: ?Route,
