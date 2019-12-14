@@ -89,7 +89,7 @@ function addRouteRecord(
     route.pathToRegexpOptions || {}
   const normalizedPath = normalizePath(path, parent, pathToRegexpOptions.strict) // ! 规范化路径
 
-  // ! caseSensitive 匹配规则是否大小写敏感
+  // ! caseSensitive 匹配规则 -> 是否大小写敏感
   if (typeof route.caseSensitive === 'boolean') {
     pathToRegexpOptions.sensitive = route.caseSensitive
   }

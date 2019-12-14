@@ -27,8 +27,8 @@ export function createRoute(
     hash: location.hash || '',
     query,
     params: location.params || {},
-    fullPath: getFullPath(location, stringifyQuery), // ! 获取完整路径
-    matched: record ? formatMatch(record) : [] // ! 获取所有的匹配 record
+    fullPath: getFullPath(location, stringifyQuery), // ! 完整路径
+    matched: record ? formatMatch(record) : [] // ! 所有的匹配 record
   }
 
   // ! 设置重定向路径

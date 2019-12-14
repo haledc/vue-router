@@ -23,7 +23,7 @@ export function install(Vue) {
     }
   }
 
-  // ! 使用 Vue 的 mixin 给路由的每个组件注入 beforeCreate 和 destroyed 钩子
+  // ! 给每个实例组件混入 beforeCreate 和 destroyed 钩子，注册路由实例
   Vue.mixin({
     beforeCreate() {
       if (isDef(this.$options.router)) {
@@ -41,14 +41,14 @@ export function install(Vue) {
     }
   })
 
-  // ! 定义 Vue 原型的 $router 属性（只读属性），使得可以在 Vue 实例中访问 router
+  // ! 定义 Vue 原型的 $router 属性（只读属性），使得可以在 Vue 实例组件中访问 router
   Object.defineProperty(Vue.prototype, '$router', {
     get() {
       return this._routerRoot._router
     }
   })
 
-  // ! 定义 Vue 原型的 $route 属性（只读属性)，使得可以在 Vue 实例中访问 route
+  // ! 定义 Vue 原型的 $route 属性（只读属性），使得可以在 Vue 实例组件中访问 route
   Object.defineProperty(Vue.prototype, '$route', {
     get() {
       return this._routerRoot._route

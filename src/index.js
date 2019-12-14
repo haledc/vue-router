@@ -53,7 +53,7 @@ export default class VueRouter {
     if (!inBrowser) {
       mode = 'abstract' // ! 非浏览器环境（服务端渲染），使用 abstract 模式
     }
-    this.mode = mode
+    this.mode = mode // ! @API
 
     // ! 匹配不同的模式，生成不同的 History 实例对象
     switch (mode) {
@@ -78,7 +78,7 @@ export default class VueRouter {
     return this.matcher.match(raw, current, redirectedFrom)
   }
 
-  // ! 获取当前的路由
+  // ! 获取当前的路由 @API
   get currentRoute(): ?Route {
     return this.history && this.history.current
   }
@@ -203,7 +203,7 @@ export default class VueRouter {
     this.go(1)
   }
 
-  // ! 获取目标路由或者当前路由匹配的组件数组 @API
+  // ! 获取跳转路由或者当前路由匹配的组件数组 @API
   getMatchedComponents(to?: RawLocation | Route): Array<any> {
     const route: any = to
       ? to.matched
@@ -223,7 +223,7 @@ export default class VueRouter {
     )
   }
 
-  // ! 解析路由信息 @API
+  // ! 解析跳转路由的信息 @API
   resolve(
     to: RawLocation,
     current?: Route,
