@@ -107,7 +107,9 @@ export default {
         if (process.env.NODE_ENV !== 'production') {
           warn(
             false,
-            `RouterLink with to="${this.props.to}" is trying to use a scoped slot but it didn't provide exactly one child.`
+            `RouterLink with to="${
+              this.to
+            }" is trying to use a scoped slot but it didn't provide exactly one child. Wrapping the content with a span element.`
           )
         }
         return scopedSlot.length === 0 ? h() : h('span', {}, scopedSlot)
