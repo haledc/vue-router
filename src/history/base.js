@@ -4,14 +4,19 @@ import { _Vue } from '../install'
 import type Router from '../index'
 import { inBrowser } from '../util/dom'
 import { runQueue } from '../util/async'
-import { warn, isError, isExtendedError } from '../util/warn'
+import { warn, isError, isRouterError } from '../util/warn'
 import { START, isSameRoute } from '../util/route'
 import {
   flatten,
   flatMapComponents,
   resolveAsyncComponents
 } from '../util/resolve-components'
-import { NavigationDuplicated } from './errors'
+import {
+  createNavigationDuplicatedError,
+  createNavigationCancelledError,
+  createNavigationRedirectedError,
+  createNavigationAbortedError
+} from './errors'
 
 // ! History 基类
 export class History {
@@ -24,6 +29,8 @@ export class History {
   readyCbs: Array<Function>
   readyErrorCbs: Array<Function>
   errorCbs: Array<Function>
+  listeners: Array<Function>
+  cleanupListeners: Function
 
   // implemented by sub-classes
   // ! 子类实现的方法
@@ -32,6 +39,7 @@ export class History {
   +replace: (loc: RawLocation) => void
   +ensureURL: (push?: boolean) => void
   +getCurrentLocation: () => string
+  +setupListeners: Function
 
   constructor(router: Router, base: ?string) {
     this.router = router
@@ -43,6 +51,7 @@ export class History {
     this.readyCbs = []
     this.readyErrorCbs = []
     this.errorCbs = []
+    this.listeners = []
   }
 
   listen(cb: Function) {
@@ -74,9 +83,13 @@ export class History {
     this.confirmTransition(
       route,
       () => {
+        const prev = this.current
         this.updateRoute(route) // ! 跳转成功更新当前路由值
         onComplete && onComplete(route) // ! 执行跳转成功函数
         this.ensureURL() // ! 确认 URL，跳转路由
+        this.router.afterHooks.forEach(hook => {
+          hook && hook(route, prev)
+        })
 
         // fire ready cbs once
         if (!this.ready) {
@@ -106,12 +119,11 @@ export class History {
 
     // ! 中断路由跳转的方法
     const abort = err => {
-      // after merging https://github.com/vuejs/vue-router/pull/2771 we
-      // When the user navigates through history through back/forward buttons
-      // we do not want to throw the error. We only throw it if directly calling
-      // push/replace. That's why it's not included in isError
+      // changed after adding errors with
+      // https://github.com/vuejs/vue-router/pull/3047 before that change,
+      // redirect and aborted navigation would produce an err == null
       // ! 非导航重复的报错时
-      if (!isExtendedError(NavigationDuplicated, err) && isError(err)) {
+      if (!isRouterError(err) && isError(err)) {
         if (this.errorCbs.length) {
           this.errorCbs.forEach(cb => {
             cb(err)
@@ -131,7 +143,7 @@ export class History {
       route.matched.length === current.matched.length
     ) {
       this.ensureURL()
-      return abort(new NavigationDuplicated(route)) // ! 中止并传入导航重复错误
+      return abort(createNavigationDuplicatedError(current, route)) // ! 中止并传入导航重复错误
     }
 
     const { updated, deactivated, activated } = resolveQueue(
@@ -159,14 +171,17 @@ export class History {
     // ! 迭代器方法 -> 执行 queue 中的守卫钩子
     const iterator = (hook: NavigationGuard, next) => {
       if (this.pending !== route) {
-        return abort()
+        return abort(createNavigationCancelledError(current, route))
       }
       try {
         // ! 执行钩子函数（守卫）并传入参数 (route -> to current -> from next -> fn)
         hook(route, current, (to: any) => {
-          if (to === false || isError(to)) {
+          if (to === false) {
             // next(false) -> abort navigation, ensure current URL
             // ! next(false) -> 中断跳转
+            this.ensureURL(true)
+            abort(createNavigationAbortedError(current, route))
+          } else if (isError(to)) {
             this.ensureURL(true)
             abort(to)
           } else if (
@@ -175,7 +190,7 @@ export class History {
               (typeof to.path === 'string' || typeof to.name === 'string'))
           ) {
             // next('/') or next({ path: '/' }) -> redirect
-            abort()
+            abort(createNavigationRedirectedError(current, route))
             if (typeof to === 'object' && to.replace) {
               this.replace(to)
             } else {
@@ -204,7 +219,7 @@ export class History {
 
       runQueue(queue, iterator, () => {
         if (this.pending !== route) {
-          return abort()
+          return abort(createNavigationCancelledError(current, route))
         }
         this.pending = null
         onComplete(route) // ! ⑧ 调用全局的 afterEach 钩子
@@ -220,14 +235,20 @@ export class History {
   }
 
   // ! 更新当前路由 this.current 的方法
-  updateRoute(route: Route) {
-    const prev = this.current
+  updateRoute (route: Route) {
     this.current = route
     this.cb && this.cb(route)
-    // ! 执行 afterHooks 钩子
-    this.router.afterHooks.forEach(hook => {
-      hook && hook(route, prev)
+  }
+
+  setupListeners () {
+    // Default implementation is empty
+  }
+
+  teardownListeners () {
+    this.listeners.forEach(cleanupListener => {
+      cleanupListener()
     })
+    this.listeners = []
   }
 }
 

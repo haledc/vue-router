@@ -103,6 +103,12 @@ export default class VueRouter {
       // ensure we still have a main app or null if no apps
       // we do not release the router so it can be reused
       if (this.app === app) this.app = this.apps[0] || null
+
+      if (!this.app) {
+        // clean up event listeners
+        // https://github.com/vuejs/vue-router/issues/2341
+        this.history.teardownListeners()
+      }
     })
 
     // main app previously initialized
@@ -116,17 +122,11 @@ export default class VueRouter {
     const history = this.history // ! 获取 History 实例
 
     // ! 判断 History 实例的类型，使用不同的方法切换路径（路由跳转）
-    if (history instanceof HTML5History) {
-      history.transitionTo(history.getCurrentLocation())
-    } else if (history instanceof HashHistory) {
-      const setupHashListener = () => {
+    if (history instanceof HTML5History || history instanceof HashHistory) {
+      const setupListeners = () => {
         history.setupListeners()
       }
-      history.transitionTo(
-        history.getCurrentLocation(),
-        setupHashListener, // ! 设置哈希监听器
-        setupHashListener
-      )
+      history.transitionTo(history.getCurrentLocation(), setupListeners, setupListeners)
     }
 
     // ! 监听并更新 route

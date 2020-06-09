@@ -22,32 +22,37 @@ export class HashHistory extends History {
   // to avoid the hashchange listener being fired too early
   // ! 设置监听器
   setupListeners() {
+    if (this.listeners.length > 0) {
+      return
+    }
+
     const router = this.router
     const expectScroll = router.options.scrollBehavior
     const supportsScroll = supportsPushState && expectScroll
 
     if (supportsScroll) {
-      setupScroll()
+      this.listeners.push(setupScroll())
     }
 
-    // ! 监听 popstate 或者 hashchange 事件
-    window.addEventListener(
-      supportsPushState ? 'popstate' : 'hashchange',
-      () => {
-        const current = this.current
-        if (!ensureSlash()) {
-          return
-        }
-        this.transitionTo(getHash(), route => {
-          if (supportsScroll) {
-            handleScroll(this.router, route, current, true)
-          }
-          if (!supportsPushState) {
-            replaceHash(route.fullPath)
-          }
-        })
+    const handleRoutingEvent = () => {
+      const current = this.current
+      if (!ensureSlash()) {
+        return
       }
-    )
+      this.transitionTo(getHash(), route => {
+        if (supportsScroll) {
+          handleScroll(this.router, route, current, true)
+        }
+        if (!supportsPushState) {
+          replaceHash(route.fullPath)
+        }
+      })
+    }
+    const eventType = supportsPushState ? 'popstate' : 'hashchange'
+    window.addEventListener(eventType, handleRoutingEvent)
+    this.listeners.push(() => {
+      window.removeEventListener(eventType, handleRoutingEvent)
+    })
   }
 
   push(location: RawLocation, onComplete?: Function, onAbort?: Function) {

@@ -9,25 +9,34 @@ import { pushState, replaceState, supportsPushState } from '../util/push-state'
 
 // ! H5 History
 export class HTML5History extends History {
-  constructor(router: Router, base: ?string) {
+  _startLocation: string
+
+  constructor (router: Router, base: ?string) {
     super(router, base)
 
+    this._startLocation = getLocation(this.base)
+  }
+
+  setupListeners () {
+    if (this.listeners.length > 0) {
+      return
+    }
+
+    const router = this.router
     const expectScroll = router.options.scrollBehavior
     const supportsScroll = supportsPushState && expectScroll
 
     if (supportsScroll) {
-      setupScroll()
+      this.listeners.push(setupScroll())
     }
 
-    const initLocation = getLocation(this.base)
-    // ! 监听 popstate 事件
-    window.addEventListener('popstate', e => {
+    const handleRoutingEvent = () => {
       const current = this.current
 
       // Avoiding first `popstate` event dispatched in some browsers but first
       // history route not updated since async guard at the same time.
       const location = getLocation(this.base)
-      if (this.current === START && location === initLocation) {
+      if (this.current === START && location === this._startLocation) {
         return
       }
 
@@ -36,6 +45,10 @@ export class HTML5History extends History {
           handleScroll(router, route, current, true)
         }
       })
+    }
+    window.addEventListener('popstate', handleRoutingEvent)
+    this.listeners.push(() => {
+      window.removeEventListener('popstate', handleRoutingEvent)
     })
   }
 
@@ -86,7 +99,7 @@ export class HTML5History extends History {
 // ! 获取 URL
 export function getLocation(base: string): string {
   let path = decodeURI(window.location.pathname)
-  if (base && path.indexOf(base) === 0) {
+  if (base && path.toLowerCase().indexOf(base.toLowerCase()) === 0) {
     path = path.slice(base.length)
   }
   return (path || '/') + window.location.search + window.location.hash
